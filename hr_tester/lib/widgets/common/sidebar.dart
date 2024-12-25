@@ -2,10 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
+import '../../models/user.dart'; // Import User and UserRole
 
 class Sidebar extends StatelessWidget {
+  // Define menu items for Admin and Employee roles
   final List<Map<String, dynamic>> adminMenuItems = [
     {'title': 'Dashboard', 'icon': Icons.dashboard, 'route': '/admin/dashboard'},
     {'title': 'Manage Users', 'icon': Icons.people, 'route': '/admin/manage-users'},
@@ -25,6 +26,11 @@ class Sidebar extends StatelessWidget {
     {'title': 'Logout', 'icon': Icons.logout, 'route': '/login'},
   ];
 
+  // Optional: Define menu items for other roles if necessary
+  final List<Map<String, dynamic>> defaultMenuItems = [
+    {'title': 'Login', 'icon': Icons.login, 'route': '/login'},
+  ];
+
   @override
   Widget build(BuildContext context) {
     final currentUser = Provider.of<AuthProvider>(context).currentUser;
@@ -37,34 +43,61 @@ class Sidebar extends StatelessWidget {
       } else if (currentUser.role == UserRole.Employee) {
         menuItems = employeeMenuItems;
       }
-      // Add more roles as needed
+      // Add more roles here if needed
+    } else {
+      // If no user is logged in, show default menu items
+      menuItems = defaultMenuItems;
     }
 
     return Drawer(
-      child: ListView(
+      child: Column(
         children: [
           UserAccountsDrawerHeader(
             accountName: Text(currentUser?.name ?? 'Guest User'),
-            accountEmail: Text(currentUser?.email ?? ''),
+            accountEmail: Text(currentUser?.email ?? 'Please login'),
             currentAccountPicture: CircleAvatar(
-              backgroundImage: NetworkImage(currentUser?.avatarUrl ?? 'https://i.pravatar.cc/150'),
+              backgroundImage: NetworkImage(
+                currentUser?.avatarUrl ??
+                    'https://i.pravatar.cc/150?img=default', // Default avatar image
+              ),
+            ),
+            decoration: BoxDecoration(
+              color: Colors.indigo,
             ),
           ),
-          ...menuItems.map((item) {
-            return ListTile(
-              leading: Icon(item['icon']),
-              title: Text(item['title']),
-              onTap: () {
-                if (item['route'] == '/login') {
-                  // Handle logout
-                  Provider.of<AuthProvider>(context, listen: false).logout();
-                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-                } else {
-                  Navigator.pushReplacementNamed(context, item['route']);
-                }
-              },
-            );
-          }).toList(),
+          Expanded(
+            child: ListView(
+              children: menuItems.map((item) {
+                return ListTile(
+                  leading: Icon(item['icon']),
+                  title: Text(item['title']),
+                  onTap: () {
+                    if (item['route'] == '/login') {
+                      // Handle logout
+                      Provider.of<AuthProvider>(context, listen: false).logout();
+                      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                    } else {
+                      Navigator.pushReplacementNamed(context, item['route']);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          Divider(),
+          ListTile(
+            leading: Icon(Icons.info),
+            title: Text('About'),
+            onTap: () {
+              // Navigate to About page or show dialog
+              showAboutDialog(
+                context: context,
+                applicationName: 'HR Tester',
+                applicationVersion: '1.0.0',
+                applicationLegalese: '© 2024 HR Tester. All rights reserved.',
+              );
+            },
+          ),
         ],
       ),
     );
