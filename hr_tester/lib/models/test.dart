@@ -1,87 +1,32 @@
 // lib/models/test.dart
 
-enum QuestionCoefficient { Easy, Medium, Hard }
+import 'question.dart';
 
-class Test {
+class TestModel {
   final String id;
   final String title;
-  final String domain;
+  final String domainId;
   final DateTime createdDate;
-  final List<TestQuestion> questions;
+  final List<Question> questions;
   final bool isActive;
 
-  Test({
+  TestModel({
     required this.id,
     required this.title,
-    required this.domain,
+    required this.domainId,
     required this.createdDate,
     required this.questions,
     required this.isActive,
   });
 
-  // Factory method to generate static tests
-  factory Test.sampleTest(String id) {
-    // Attempt to parse the id to an integer; default to 0 if parsing fails
-    int numericId = int.tryParse(id) ?? 0;
-
-    return Test(
+  factory TestModel.sampleTest(String id) {
+    return TestModel(
       id: id,
       title: 'Test Title $id',
-      domain: ['Engineering', 'HR', 'Marketing'][numericId % 3],
-      createdDate: DateTime.now().subtract(Duration(days: numericId)),
-      questions: List.generate(
-        10,
-            (index) => TestQuestion.sampleQuestion('$id-$index'),
-      ),
-      isActive: numericId % 2 == 0,
+      domainId: ['1', '2', '3', '4'][int.parse(id) % 4], // Assuming domain IDs 1-4
+      createdDate: DateTime.now().subtract(Duration(days: int.parse(id))),
+      questions: List.generate(10, (index) => Question.sampleQuestion('$id-$index')),
+      isActive: int.parse(id) % 2 == 0,
     );
   }
-}
-
-class TestQuestion {
-  final String id;
-  final String question;
-  final List<TestOption> options;
-  final QuestionCoefficient coefficient;
-
-  TestQuestion({
-    required this.id,
-    required this.question,
-    required this.options,
-    required this.coefficient,
-  });
-
-  // Factory method to generate static questions
-  factory TestQuestion.sampleQuestion(String id) {
-    // Extract the question index from the id
-    // Assuming id format is 'testIndex-questionIndex', e.g., '1-0'
-    List<String> parts = id.split('-');
-    int questionIndex = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
-
-    return TestQuestion(
-      id: id,
-      question: 'What is the purpose of question $id?',
-      options: List.generate(
-        4,
-            (index) => TestOption(
-          id: '$id-o$index',
-          optionText: 'Option ${index + 1}',
-          isCorrect: index == 0,
-        ),
-      ),
-      coefficient: QuestionCoefficient.values[questionIndex % 3],
-    );
-  }
-}
-
-class TestOption {
-  final String id;
-  final String optionText;
-  final bool isCorrect;
-
-  TestOption({
-    required this.id,
-    required this.optionText,
-    this.isCorrect = false,
-  });
 }

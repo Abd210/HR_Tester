@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/test_provider.dart';
-import '../../widgets/common/sidebar.dart';
+import '../common/sidebar.dart';
 import '../../models/user.dart';
 import '../../models/test.dart';
+import '../../widgets/charts/users_distribution_chart.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+
 
 class DashboardScreen extends StatelessWidget {
   @override
@@ -17,7 +19,7 @@ class DashboardScreen extends StatelessWidget {
 
     List<User> admins = userProvider.users.where((user) => user.role == UserRole.Admin).toList();
     List<User> employees = userProvider.users.where((user) => user.role == UserRole.Employee).toList();
-    List<Test> activeTests = testProvider.tests.where((test) => test.isActive).toList();
+    List<TestModel> activeTests = testProvider.tests.where((test) => test.isActive).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text('Admin Dashboard')),
@@ -57,21 +59,7 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     Text('Users Distribution', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     SizedBox(height: 16),
-                    SfCircularChart(
-                      legend: Legend(isVisible: true, overflowMode: LegendItemOverflowMode.wrap),
-                      series: <CircularSeries>[
-                        PieSeries<UserRoleData, String>(
-                          dataSource: [
-                            UserRoleData('Admins', admins.length),
-                            UserRoleData('Employees', employees.length),
-                            // Add more roles if applicable
-                          ],
-                          xValueMapper: (UserRoleData data, _) => data.role,
-                          yValueMapper: (UserRoleData data, _) => data.count,
-                          dataLabelSettings: DataLabelSettings(isVisible: true),
-                        )
-                      ],
-                    ),
+                    UsersDistributionChart(adminCount: admins.length, employeeCount: employees.length),
                   ],
                 ),
               ),
@@ -92,12 +80,12 @@ class DashboardScreen extends StatelessWidget {
               physics: NeverScrollableScrollPhysics(),
               itemCount: activeTests.length,
               itemBuilder: (context, index) {
-                final Test test = activeTests[index];
+                final TestModel test = activeTests[index];
                 return Card(
                   child: ListTile(
                     leading: Icon(Icons.assignment, color: Colors.blue),
                     title: Text(test.title),
-                    subtitle: Text('Domain: ${test.domain}'),
+                    subtitle: Text('Domain: ${test.domainId}'),
                     trailing: Icon(Icons.arrow_forward),
                     onTap: () {
                       // Navigate to test details or management screen
@@ -145,7 +133,7 @@ class DashboardScreen extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 24, horizontal: 8),
           child: Column(
             children: [
-              Icon(icon, size: 40, color: Colors.blue),
+              Icon(icon, size: 40, color: Colors.indigo),
               SizedBox(height: 16),
               Text(
                 count,
@@ -159,11 +147,4 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class UserRoleData {
-  final String role;
-  final int count;
-
-  UserRoleData(this.role, this.count);
 }

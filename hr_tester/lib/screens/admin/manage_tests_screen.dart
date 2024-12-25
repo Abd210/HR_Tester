@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/test_provider.dart';
 import '../../models/test.dart';
+import '../common/sidebar.dart';
 import '../../widgets/common/header.dart';
-import '../../widgets/common/sidebar.dart';
-import '../../widgets/common/notification_widget.dart';
 import 'package:uuid/uuid.dart';
 
 class ManageTestsScreen extends StatefulWidget {
@@ -19,8 +18,9 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
   final _uuid = Uuid();
 
   String _title = '';
-  String _domain = 'Engineering';
+  String _domainId = '1'; // Assuming domain IDs are '1', '2', etc.
   bool _isActive = true;
+  DateTime _scheduledDate = DateTime.now();
 
   void _showAddTestDialog(BuildContext context) {
     showDialog(
@@ -36,25 +36,60 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
                   // Title Field
                   TextFormField(
                     decoration: InputDecoration(labelText: 'Test Title'),
-                    validator: (value) => value == null || value.isEmpty ? 'Enter test title' : null,
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter test title' : null,
                     onSaved: (value) => _title = value!,
                   ),
                   SizedBox(height: 16),
                   // Domain Dropdown
                   DropdownButtonFormField<String>(
-                    value: _domain,
+                    value: _domainId,
                     decoration: InputDecoration(labelText: 'Domain'),
-                    items: ['Engineering', 'Human Resources', 'Marketing', 'Sales'].map((String domain) {
+                    items: [
+                      {'id': '1', 'name': 'Engineering'},
+                      {'id': '2', 'name': 'Human Resources'},
+                      {'id': '3', 'name': 'Marketing'},
+                      {'id': '4', 'name': 'Sales'},
+                      // Add more domains as needed
+                    ].map((domain) {
                       return DropdownMenuItem<String>(
-                        value: domain,
-                        child: Text(domain),
+                        value: domain['id'],
+                        child: Text(domain['name']!),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
                       setState(() {
-                        _domain = newValue!;
+                        _domainId = newValue!;
                       });
                     },
+                  ),
+                  SizedBox(height: 16),
+                  // Scheduled Date Picker
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Scheduled Date: ${_scheduledDate.toLocal()}'.split(' ')[0],
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      TextButton(
+                        child: Text('Select Date'),
+                        onPressed: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: _scheduledDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(Duration(days: 365)),
+                          );
+                          if (pickedDate != null && pickedDate != _scheduledDate) {
+                            setState(() {
+                              _scheduledDate = pickedDate;
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ),
                   SizedBox(height: 16),
                   // Is Active Switch
@@ -81,17 +116,19 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   _formKey.currentState!.save();
-                  final newTest = Test(
+                  final newTest = TestModel(
                     id: _uuid.v4(),
                     title: _title,
-                    domain: _domain,
-                    createdDate: DateTime.now(),
+                    domainId: _domainId, // Use domainId instead of domain
+                    createdDate: _scheduledDate, // Use scheduledDate as createdDate
                     questions: [], // Initialize with empty questions or add static questions as needed
                     isActive: _isActive,
                   );
                   Provider.of<TestProvider>(context, listen: false).addTest(newTest);
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(NotificationWidget(message: 'Test added successfully') as SnackBar);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Test added successfully')),
+                  );
                 }
               },
             ),
@@ -101,11 +138,12 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
     );
   }
 
-  void _showEditTestDialog(BuildContext context, Test test) {
+  void _showEditTestDialog(BuildContext context, TestModel test) {
     final _editFormKey = GlobalKey<FormState>();
     String _editTitle = test.title;
-    String _editDomain = test.domain;
+    String _editDomainId = test.domainId;
     bool _editIsActive = test.isActive;
+    DateTime _editScheduledDate = test.createdDate;
 
     showDialog(
       context: context,
@@ -121,25 +159,60 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
                   TextFormField(
                     initialValue: _editTitle,
                     decoration: InputDecoration(labelText: 'Test Title'),
-                    validator: (value) => value == null || value.isEmpty ? 'Enter test title' : null,
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter test title' : null,
                     onSaved: (value) => _editTitle = value!,
                   ),
                   SizedBox(height: 16),
                   // Domain Dropdown
                   DropdownButtonFormField<String>(
-                    value: _editDomain,
+                    value: _editDomainId,
                     decoration: InputDecoration(labelText: 'Domain'),
-                    items: ['Engineering', 'Human Resources', 'Marketing', 'Sales'].map((String domain) {
+                    items: [
+                      {'id': '1', 'name': 'Engineering'},
+                      {'id': '2', 'name': 'Human Resources'},
+                      {'id': '3', 'name': 'Marketing'},
+                      {'id': '4', 'name': 'Sales'},
+                      // Add more domains as needed
+                    ].map((domain) {
                       return DropdownMenuItem<String>(
-                        value: domain,
-                        child: Text(domain),
+                        value: domain['id'],
+                        child: Text(domain['name']!),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
                       setState(() {
-                        _editDomain = newValue!;
+                        _editDomainId = newValue!;
                       });
                     },
+                  ),
+                  SizedBox(height: 16),
+                  // Scheduled Date Picker
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Scheduled Date: ${_editScheduledDate.toLocal()}'.split(' ')[0],
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      TextButton(
+                        child: Text('Select Date'),
+                        onPressed: () async {
+                          DateTime? pickedDate = await showDatePicker(
+                            context: context,
+                            initialDate: _editScheduledDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(Duration(days: 365)),
+                          );
+                          if (pickedDate != null && pickedDate != _editScheduledDate) {
+                            setState(() {
+                              _editScheduledDate = pickedDate;
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ),
                   SizedBox(height: 16),
                   // Is Active Switch
@@ -166,17 +239,19 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
               onPressed: () {
                 if (_editFormKey.currentState!.validate()) {
                   _editFormKey.currentState!.save();
-                  final updatedTest = Test(
+                  final updatedTest = TestModel(
                     id: test.id,
                     title: _editTitle,
-                    domain: _editDomain,
-                    createdDate: test.createdDate, // Keep the original creation date
+                    domainId: _editDomainId,
+                    createdDate: _editScheduledDate,
                     questions: test.questions, // Keep existing questions
                     isActive: _editIsActive,
                   );
                   Provider.of<TestProvider>(context, listen: false).updateTest(updatedTest);
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(NotificationWidget(message: 'Test updated successfully') as SnackBar);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Test updated successfully')),
+                  );
                 }
               },
             ),
@@ -223,14 +298,14 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
                   columns: [
                     DataColumn(label: Text('Title')),
                     DataColumn(label: Text('Domain')),
-                    DataColumn(label: Text('Created Date')),
+                    DataColumn(label: Text('Scheduled Date')),
                     DataColumn(label: Text('Status')),
                     DataColumn(label: Text('Actions')),
                   ],
                   rows: tests.map((test) {
                     return DataRow(cells: [
                       DataCell(Text(test.title)),
-                      DataCell(Text(test.domain)),
+                      DataCell(Text(_getDomainName(test.domainId))), // Map domainId to domain name
                       DataCell(Text('${test.createdDate.toLocal()}'.split(' ')[0])),
                       DataCell(
                         Text(
@@ -251,7 +326,9 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
                             icon: Icon(Icons.delete, color: Colors.red),
                             onPressed: () {
                               testProvider.removeTest(test.id);
-                              ScaffoldMessenger.of(context).showSnackBar(NotificationWidget(message: 'Test removed successfully') as SnackBar);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Test removed successfully')),
+                              );
                             },
                           ),
                         ],
@@ -265,5 +342,21 @@ class _ManageTestsScreenState extends State<ManageTestsScreen> {
         ),
       ),
     );
+  }
+
+  String _getDomainName(String domainId) {
+    // Map domainId to domain name
+    switch (domainId) {
+      case '1':
+        return 'Engineering';
+      case '2':
+        return 'Human Resources';
+      case '3':
+        return 'Marketing';
+      case '4':
+        return 'Sales';
+      default:
+        return 'Unknown';
+    }
   }
 }

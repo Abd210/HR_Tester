@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import '../models/user.dart';
+import 'package:uuid/uuid.dart';
 
 class UserProvider with ChangeNotifier {
-  List<User> _users = List.generate(20, (index) => User.sampleUser((index + 1).toString()));
+  List<User> _users = List.generate(10, (index) => User.sampleUser((index + 1).toString()));
+  final Uuid _uuid = Uuid();
 
   List<User> get users => _users;
 

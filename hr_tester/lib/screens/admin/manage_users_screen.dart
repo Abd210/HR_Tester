@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/user_provider.dart';
 import '../../models/user.dart';
+import '../common/sidebar.dart';
 import '../../widgets/common/header.dart';
-import '../../widgets/common/sidebar.dart';
 import '../../widgets/common/notification_widget.dart';
 import 'package:uuid/uuid.dart';
+
+import '../common/sidebar.dart';
 
 class ManageUsersScreen extends StatefulWidget {
   @override
@@ -38,14 +40,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   // Name Field
                   TextFormField(
                     decoration: InputDecoration(labelText: 'Name'),
-                    validator: (value) => value == null || value.isEmpty ? 'Enter name' : null,
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter name' : null,
                     onSaved: (value) => _name = value!,
                   ),
                   SizedBox(height: 16),
                   // Email Field
                   TextFormField(
                     decoration: InputDecoration(labelText: 'Email'),
-                    validator: (value) => value == null || !value.contains('@') ? 'Enter valid email' : null,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) =>
+                    value == null || !value.contains('@') ? 'Enter valid email' : null,
                     onSaved: (value) => _email = value!,
                   ),
                   SizedBox(height: 16),
@@ -69,7 +74,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   // Department Field
                   TextFormField(
                     decoration: InputDecoration(labelText: 'Department'),
-                    validator: (value) => value == null || value.isEmpty ? 'Enter department' : null,
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter department' : null,
                     onSaved: (value) => _department = value!,
                   ),
                 ],
@@ -97,10 +103,13 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     permissions: _role == UserRole.Admin
                         ? ['view_users', 'edit_users', 'delete_users']
                         : ['view_tests'],
+                    cvs: [], // Added the required 'cvs' parameter
                   );
                   Provider.of<UserProvider>(context, listen: false).addUser(newUser);
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(NotificationWidget(message: 'User added successfully') as SnackBar);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('User added successfully')),
+                  );
                 }
               },
             ),
@@ -131,7 +140,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   TextFormField(
                     initialValue: _editName,
                     decoration: InputDecoration(labelText: 'Name'),
-                    validator: (value) => value == null || value.isEmpty ? 'Enter name' : null,
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter name' : null,
                     onSaved: (value) => _editName = value!,
                   ),
                   SizedBox(height: 16),
@@ -139,7 +149,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   TextFormField(
                     initialValue: _editEmail,
                     decoration: InputDecoration(labelText: 'Email'),
-                    validator: (value) => value == null || !value.contains('@') ? 'Enter valid email' : null,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) =>
+                    value == null || !value.contains('@') ? 'Enter valid email' : null,
                     onSaved: (value) => _editEmail = value!,
                   ),
                   SizedBox(height: 16),
@@ -164,7 +176,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   TextFormField(
                     initialValue: _editDepartment,
                     decoration: InputDecoration(labelText: 'Department'),
-                    validator: (value) => value == null || value.isEmpty ? 'Enter department' : null,
+                    validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter department' : null,
                     onSaved: (value) => _editDepartment = value!,
                   ),
                 ],
@@ -192,10 +205,13 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     permissions: _editRole == UserRole.Admin
                         ? ['view_users', 'edit_users', 'delete_users']
                         : ['view_tests'],
+                    cvs: user.cvs, // Ensure 'cvs' is provided
                   );
                   Provider.of<UserProvider>(context, listen: false).updateUser(updatedUser);
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(NotificationWidget(message: 'User updated successfully') as SnackBar);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('User updated successfully')),
+                  );
                 }
               },
             ),
@@ -240,22 +256,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
                   columns: [
-                    DataColumn(label: Text('Avatar')),
                     DataColumn(label: Text('Name')),
                     DataColumn(label: Text('Email')),
                     DataColumn(label: Text('Role')),
                     DataColumn(label: Text('Department')),
-                    DataColumn(label: Text('Joined Date')),
                     DataColumn(label: Text('Actions')),
                   ],
                   rows: users.map((user) {
                     return DataRow(cells: [
-                      DataCell(CircleAvatar(backgroundImage: NetworkImage(user.avatarUrl))),
                       DataCell(Text(user.name)),
                       DataCell(Text(user.email)),
                       DataCell(Text(describeEnum(user.role))),
                       DataCell(Text(user.department)),
-                      DataCell(Text('${user.joinedDate.toLocal()}'.split(' ')[0])),
                       DataCell(Row(
                         children: [
                           IconButton(
@@ -266,7 +278,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                             icon: Icon(Icons.delete, color: Colors.red),
                             onPressed: () {
                               userProvider.removeUser(user.id);
-                              ScaffoldMessenger.of(context).showSnackBar(NotificationWidget(message: 'User removed successfully') as SnackBar);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('User removed successfully')),
+                              );
                             },
                           ),
                         ],

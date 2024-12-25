@@ -1,11 +1,19 @@
 // lib/screens/tests/take_test_screen.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/test.dart';
 import '../../providers/test_provider.dart';
-import '../../widgets/common/sidebar.dart';
+import '../../models/test.dart';
+import '../../models/question.dart';
+import '../common/sidebar.dart';
 import '../../widgets/common/header.dart';
+import 'package:camera/camera.dart';
+import 'dart:async';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
+import '../common/sidebar.dart';
 
 class TakeTestScreen extends StatefulWidget {
   @override
@@ -14,13 +22,125 @@ class TakeTestScreen extends StatefulWidget {
 
 class _TakeTestScreenState extends State<TakeTestScreen> {
   int _currentQuestionIndex = 0;
-  Map<String, String> _answers = {}; // questionId: selectedOptionId
+  Map<String, List<String>> _answers = {}; // questionId: List of selectedOptionIds
   bool _isSubmitted = false;
+  late CameraController _cameraController;
+  late Future<void> _initializeCameraFuture;
+  bool _isCameraInitialized = false;
+  final ImagePicker _picker = ImagePicker();
+  XFile? _capturedImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      // Obtain a list of the available cameras on the device.
+      final cameras = await availableCameras();
+
+      // Get a specific camera from the list of available cameras.
+      final firstCamera = cameras.first;
+
+      _cameraController = CameraController(
+        firstCamera,
+        ResolutionPreset.medium,
+      );
+
+      _initializeCameraFuture = _cameraController.initialize();
+      await _initializeCameraFuture;
+
+      setState(() {
+        _isCameraInitialized = true;
+      });
+    } catch (e) {
+      print('Error initializing camera: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
+  }
+
+  void _toggleAnswer(String questionId, String optionId) {
+    setState(() {
+      if (_answers.containsKey(questionId)) {
+        if (_answers[questionId]!.contains(optionId)) {
+          _answers[questionId]!.remove(optionId);
+        } else {
+          _answers[questionId]!.add(optionId);
+        }
+      } else {
+        _answers[questionId] = [optionId];
+      }
+    });
+  }
+
+  void _submitTest(BuildContext context, TestModel test) {
+    setState(() {
+      _isSubmitted = true;
+    });
+
+    // Calculate score based on coefficients and correct answers
+    double totalScore = 0;
+    double maxScore = 0;
+
+    for (var question in test.questions) {
+      maxScore += _getCoefficientValue(question.coefficient);
+      if (_answers.containsKey(question.id)) {
+        List<String> selected = _answers[question.id]!;
+        List<String> correct = question.correctAnswerIds;
+        if (selected.toSet().containsAll(correct.toSet()) && correct.toSet().containsAll(selected.toSet())) {
+          totalScore += _getCoefficientValue(question.coefficient);
+        }
+      }
+    }
+
+    double percentage = (totalScore / maxScore) * 100;
+
+    // Navigate to Test Results Screen with the score and answers
+    Navigator.pushReplacementNamed(
+      context,
+      '/tests/results',
+      arguments: {'score': percentage, 'testId': test.id, 'answers': _answers},
+    );
+  }
+
+  double _getCoefficientValue(QuestionCoefficient coefficient) {
+    switch (coefficient) {
+      case QuestionCoefficient.Easy:
+        return 1.0;
+      case QuestionCoefficient.Medium:
+        return 2.0;
+      case QuestionCoefficient.Hard:
+        return 3.0;
+      default:
+        return 1.0;
+    }
+  }
+
+  Future<void> _capturePhoto() async {
+    try {
+      final image = await _picker.pickImage(source: ImageSource.camera);
+      if (image != null) {
+        setState(() {
+          _capturedImage = image;
+        });
+        // Save or process the captured image as needed
+      }
+    } catch (e) {
+      print('Error capturing photo: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final testProvider = Provider.of<TestProvider>(context);
-    final Test? test = testProvider.tests.isNotEmpty ? testProvider.tests.first : null;
+    final TestModel? test = testProvider.tests.isNotEmpty ? testProvider.tests.first : null;
 
     if (test == null) {
       return Scaffold(
@@ -30,18 +150,47 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
       );
     }
 
-    final TestQuestion currentQuestion = test.questions[_currentQuestionIndex];
+    if (_isSubmitted) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    final Question currentQuestion = test.questions[_currentQuestionIndex];
 
     return Scaffold(
       appBar: Header(title: 'Take Test: ${test.title}'),
       drawer: Sidebar(),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: _isSubmitted
-            ? _buildResultView(test)
-            : Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
+            // Webcam Preview
+            _isCameraInitialized
+                ? Container(
+              height: 200,
+              child: CameraPreview(_cameraController),
+            )
+                : Container(
+              height: 200,
+              color: Colors.black12,
+              child: Center(child: Text('Initializing camera...')),
+            ),
+            SizedBox(height: 16),
+
+            // Capture Photo Button
+            ElevatedButton.icon(
+              onPressed: _capturePhoto,
+              icon: Icon(Icons.camera_alt),
+              label: Text('Capture Photo'),
+            ),
+            SizedBox(height: 16),
+            _capturedImage != null
+                ? Image.file(
+              File(_capturedImage!.path),
+              height: 100,
+            )
+                : Container(),
+            SizedBox(height: 16),
+
             // Question Header
             Text(
               'Question ${_currentQuestionIndex + 1} of ${test.questions.length}',
@@ -52,25 +201,37 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
 
             // Question Text
             Text(
-              currentQuestion.question,
+              currentQuestion.text,
               style: TextStyle(fontSize: 18),
             ),
             SizedBox(height: 24),
 
+            // Coefficient Note
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Chip(
+                label: Text('Difficulty: ${describeEnum(currentQuestion.coefficient)}'),
+                backgroundColor: _getCoefficientColor(currentQuestion.coefficient),
+              ),
+            ),
+            SizedBox(height: 16),
+
             // Options
-            ...currentQuestion.options.map((option) {
-              return RadioListTile<String>(
-                title: Text(option.optionText),
-                value: option.id,
-                groupValue: _answers[currentQuestion.id],
-                onChanged: (value) {
-                  setState(() {
-                    _answers[currentQuestion.id] = value!;
-                  });
-                },
-              );
-            }).toList(),
-            Spacer(),
+            Expanded(
+              child: ListView(
+                children: currentQuestion.answers.map((option) {
+                  bool isSelected = _answers[currentQuestion.id]?.contains(option.id) ?? false;
+                  return CheckboxListTile(
+                    title: Text(option.text),
+                    value: isSelected,
+                    onChanged: (bool? value) {
+                      _toggleAnswer(currentQuestion.id, option.id);
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+            SizedBox(height: 16),
 
             // Navigation Buttons
             Row(
@@ -94,9 +255,7 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
                       });
                     } else {
                       // Submit Test
-                      setState(() {
-                        _isSubmitted = true;
-                      });
+                      _submitTest(context, test);
                     }
                   },
                   child: Text(_currentQuestionIndex < test.questions.length - 1 ? 'Next' : 'Submit'),
@@ -109,36 +268,16 @@ class _TakeTestScreenState extends State<TakeTestScreen> {
     );
   }
 
-  Widget _buildResultView(Test test) {
-    int correctAnswers = 0;
-    test.questions.forEach((question) {
-      String? selectedOptionId = _answers[question.id];
-      if (selectedOptionId != null) {
-        TestOption selectedOption = question.options.firstWhere((option) => option.id == selectedOptionId);
-        if (selectedOption.isCorrect) correctAnswers++;
-      }
-    });
-
-    double percentage = (correctAnswers / test.questions.length) * 100;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('Test Submitted!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          SizedBox(height: 24),
-          Text('You answered $correctAnswers out of ${test.questions.length} correctly.', style: TextStyle(fontSize: 18)),
-          SizedBox(height: 16),
-          Text('Score: ${percentage.toStringAsFixed(2)}%', style: TextStyle(fontSize: 22, color: Colors.green)),
-          SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, '/tests/summary');
-            },
-            child: Text('View Summary'),
-          ),
-        ],
-      ),
-    );
+  Color _getCoefficientColor(QuestionCoefficient coefficient) {
+    switch (coefficient) {
+      case QuestionCoefficient.Easy:
+        return Colors.green;
+      case QuestionCoefficient.Medium:
+        return Colors.orange;
+      case QuestionCoefficient.Hard:
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }

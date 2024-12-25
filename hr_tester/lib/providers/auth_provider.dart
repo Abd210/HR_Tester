@@ -30,7 +30,8 @@ class AuthProvider with ChangeNotifier {
         avatarUrl: 'https://i.pravatar.cc/150?img=1',
         joinedDate: DateTime(2020, 1, 1),
         department: 'Administration',
-        permissions: ['view_users', 'edit_users', 'delete_users'],
+        permissions: ['view_users', 'edit_users', 'delete_users', 'manage_tests', 'manage_domains'],
+        cvs: [],
       );
       _error = null;
     } else if (email == 'employee@example.com' && password == 'password') {
@@ -42,7 +43,8 @@ class AuthProvider with ChangeNotifier {
         avatarUrl: 'https://i.pravatar.cc/150?img=2',
         joinedDate: DateTime(2021, 6, 15),
         department: 'Engineering',
-        permissions: ['view_tests'],
+        permissions: ['view_tests', 'take_tests', 'view_profile'],
+        cvs: [],
       );
       _error = null;
     } else {

@@ -5,9 +5,9 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/admin/dashboard_screen.dart';
 import '../screens/admin/manage_users_screen.dart';
-import '../screens/admin/manage_roles_screen.dart';
 import '../screens/admin/manage_tests_screen.dart';
 import '../screens/admin/manage_domains_screen.dart';
+import '../screens/admin/manage_cv_screen.dart';
 import '../screens/tests/take_test_screen.dart';
 import '../screens/tests/test_results_screen.dart';
 import '../screens/tests/test_summary_screen.dart';
@@ -23,9 +23,9 @@ class AppRoutes {
     '/register': (context) => RegisterScreen(),
     '/admin/dashboard': (context) => DashboardScreen(),
     '/admin/manage-users': (context) => ManageUsersScreen(),
-    '/admin/manage-roles': (context) => ManageRolesScreen(),
     '/admin/manage-tests': (context) => ManageTestsScreen(),
     '/admin/manage-domains': (context) => ManageDomainsScreen(),
+    '/admin/manage-cv': (context) => ManageCvScreen(),
     '/tests/take': (context) => TakeTestScreen(),
     '/tests/results': (context) => TestResultsScreen(),
     '/tests/summary': (context) => TestSummaryScreen(),

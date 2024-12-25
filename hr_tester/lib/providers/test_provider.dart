@@ -2,13 +2,15 @@
 
 import 'package:flutter/material.dart';
 import '../models/test.dart';
+import 'package:uuid/uuid.dart';
 
 class TestProvider with ChangeNotifier {
-  List<Test> _tests = List.generate(10, (index) => Test.sampleTest((index + 1).toString()));
+  List<TestModel> _tests = List.generate(5, (index) => TestModel.sampleTest((index + 1).toString()));
+  final Uuid _uuid = Uuid();
 
-  List<Test> get tests => _tests;
+  List<TestModel> get tests => _tests;
 
-  void addTest(Test test) {
+  void addTest(TestModel test) {
     _tests.add(test);
     notifyListeners();
   }
@@ -18,7 +20,7 @@ class TestProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateTest(Test updatedTest) {
+  void updateTest(TestModel updatedTest) {
     int index = _tests.indexWhere((test) => test.id == updatedTest.id);
     if (index != -1) {
       _tests[index] = updatedTest;
